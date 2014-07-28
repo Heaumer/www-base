@@ -1,0 +1,23 @@
+<div class="container">
+	{{ if .Connected }}
+		<p>
+			Hello,
+			{{ if .HasFullname }}
+				{{ .User.Fullname }} ({{ .User.Nick }}).
+			{{ else }}
+				{{ .User.Nick }}.
+			{{ end }}
+		</p>
+		{{ if .HasWebsite }}
+			<p>
+				Your homepage is <a href="{{ .User.Website }}">here</a>
+			</p>
+		{{ end }}
+	{{ else }}
+		<p>
+			Please, <a href="/register">register</a> or
+			<a href="/login">login</a>!
+		</p>
+	{{ end }}
+</p>
+</div>

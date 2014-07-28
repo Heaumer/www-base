@@ -1,0 +1,5 @@
+*.db
+*~
+*.swp*
+www-base
+www-base.db
