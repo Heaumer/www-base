@@ -27,6 +27,8 @@ var (
 		template.New("header.html").ParseFiles("templates/header.html"))
 	indext = template.Must(
 		template.New("index.html").ParseFiles("templates/index.html"))
+	settingst = template.Must(
+		template.New("settings.html").ParseFiles("templates/settings.html"))
 )
 
 // connected users
@@ -150,6 +152,36 @@ func register(w http.ResponseWriter, r *http.Request, u *User) {
 	}
 }
 
+func settings(w http.ResponseWriter, r *http.Request, u *User) {
+	switch r.Method {
+	case "GET":
+		writeTemplate(w, settingst, u)
+	case "POST":
+		if err := r.ParseForm(); err != nil {
+			log.Println(err)
+		}
+		// Ensure id is not set by user, as struct is automatically
+		// filled from POST fields, retrieved from user.
+		id := u.Id
+		// Save old password. If the field has been left empty
+		// by user, it won't be changed; else, if the password
+		// is validated, it will be update.
+		passwd := u.Passwd
+		if err := decoder.Decode(u, r.PostForm); err != nil {
+			log.Println(err)
+		}
+		u.Id = id
+		if err := u.Update(passwd); err != nil {
+			log.Println(err)
+			setError(w, r, err.Error())
+			http.Redirect(w, r, "/settings", http.StatusFound)
+		} else {
+			setToken(w, r, u)
+			http.Redirect(w, r, "/", http.StatusFound)
+		}
+	}
+}
+
 func login(w http.ResponseWriter, r *http.Request, u *User) {
 	// already connected?
 	if u != nil {
@@ -186,6 +218,11 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+// page for which user must already be authenticated
+var mustauth = map[string]bool {
+	"settings" : true,
+}
+
 func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u *User
@@ -194,6 +231,10 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.Handle
 			u = tokens.v[token]
 			unsetToken(r, token)
 			setToken(w, r, u)
+		} else if mustauth[r.URL.Path[1:]] {
+			setError(w, r, "Not yet connected")
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
 		}
 
 		err := getError(w, r)
@@ -230,6 +271,7 @@ func main() {
 
 	http.HandleFunc("/", makeHandler(index))
 	http.HandleFunc("/register", makeHandler(register))
+	http.HandleFunc("/settings", makeHandler(settings))
 	http.HandleFunc("/login", makeHandler(login))
 	http.HandleFunc("/logout", logout)
 

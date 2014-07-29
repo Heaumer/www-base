@@ -57,6 +57,18 @@ func (u *User) Register() error {
 	return store.AddUser(u)
 }
 
+func (u *User) Update(oldpasswd string) error {
+	if err := u.Validate(); err != nil {
+		return err
+	}
+
+	// password has changed, and is valid
+	if u.Passwd != oldpasswd {
+		u.Passwd = hashPasswd(u.Passwd)
+	}
+	return store.UpdateUser(u)
+}
+
 func (u *User) Login() (err error) {
 	*u, err = store.GetUser(u.Nick, hashPasswd(u.Passwd))
 	return

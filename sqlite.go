@@ -85,7 +85,26 @@ func (db *SQLite) AddUser(u *User) error {
 		return errors.New("Nickname or email already taken")
 	}
 
+	// XXX safe? (maybe lock/unlock)
 	u.Id = db.LastInsertRowID()
+
+	return nil
+}
+
+func (db *SQLite) UpdateUser(u *User) error {
+	_, err := db.Execute2(`
+		UPDATE users
+		SET
+			passwd = (?),
+			email = (?),
+			website = (?),
+			fullname = (?)
+		WHERE id = (?)`,
+		u.Passwd, u.Email, u.Website, u.Fullname, u.Id)
+
+	if err != nil && err != sqlite3.ROW {
+		return errors.New("Email already taken")
+	}
 
 	return nil
 }

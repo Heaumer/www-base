@@ -21,5 +21,8 @@ Is the glue between main.go and store.go: it checks data
 received from user, and store or retrieve it.
 
 # TODO
-Use flash messages for errors, and clean the gorilla/sessions uses.
-Remove jquery/bootstrap and use CDN instead.
+
+* account deletion
+* Use flash messages for errors, and clean the gorilla/sessions uses.
+* Remove jquery/bootstrap and use CDN instead.
+* Generic Data with permissions

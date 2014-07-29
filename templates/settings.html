@@ -1,0 +1,25 @@
+<div class="container text-center">
+
+	<form action="/settings" method="post">
+		<div class="input-group">
+			<span class="input-group-addon">Password</span>
+			<input name="Passwd" type="password" class="form-control" />
+		</div>
+		<div class="input-group">
+			<span class="input-group-addon">Email</span>
+			<input name="Email" type="text" class="form-control"
+				value="{{ .Email }}" />
+		</div>
+		<div class="input-group">
+			<span class="input-group-addon">Website</span>
+			<input name="Website" type="text" class="form-control"
+				value="{{ .Website }}" />
+		</div>
+		<div class="input-group">
+			<span class="input-group-addon">Fullname</span>
+			<input name="Fullname" type="text" class="form-control"
+				value="{{ .Fullname }}" />
+		</div>
+		<input class="btn btn-success btn-lg" type="submit" value="Update" />
+	</form>
+</div>
