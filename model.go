@@ -26,6 +26,13 @@ type User struct {
 	Fullname string
 }
 
+type Data struct {
+	Id      int64
+	Uid     int64	// owner
+	Name    string
+	Content string
+}
+
 func (u *User) Validate() error {
 	if u.Nick == "" {
 		return errors.New("Empty login")
@@ -85,4 +92,44 @@ func (u *User) String() string {
 	}
 
 	return fn + u.Nick + " " + web
+}
+
+func (u *User) GetData() []Data {
+	return store.GetData(u)
+}
+
+func (d *Data) Validate() error {
+	if d.Name == "" {
+		return errors.New("Empty name")
+	}
+
+	if d.Content == "" {
+		return errors.New("No content")
+	}
+
+	return nil
+}
+
+func (d *Data) Add() error {
+	if err := d.Validate(); err != nil {
+		return err
+	}
+
+	return store.AddData(d)
+}
+
+func (d *Data) Delete() error {
+	return errors.New("Not implemented")
+}
+
+func (d *Data) Edit() error {
+	if err := d.Validate(); err != nil {
+		return err
+	}
+
+	return store.UpdateData(d)
+}
+
+func (d *Data) String() string {
+	return d.Name +": '"+d.Content+"'"
 }

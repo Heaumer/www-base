@@ -118,7 +118,8 @@ func index(w http.ResponseWriter, r *http.Request, u *User) {
 			User        *User
 			HasWebsite  bool
 			HasFullname bool
-		}{true, u, u.Website != "", u.Fullname != ""}
+			Data        []Data
+		}{true, u, u.Website != "", u.Fullname != "", u.GetData()}
 		writeTemplate(w, indext, &d)
 	}
 }
@@ -163,7 +164,7 @@ func settings(w http.ResponseWriter, r *http.Request, u *User) {
 		// Ensure id is not set by user, as struct is automatically
 		// filled from POST fields, retrieved from user.
 		id := u.Id
-		// Save old password. If the field has been left empty
+		// XXX Save old password. If the field has been left empty
 		// by user, it won't be changed; else, if the password
 		// is validated, it will be update.
 		passwd := u.Passwd
@@ -218,9 +219,59 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func add(w http.ResponseWriter, r *http.Request, u *User) {
+	if err := r.ParseForm(); err != nil {
+		log.Println(err)
+	}
+	d := new(Data)
+
+	if err := decoder.Decode(d, r.PostForm); err != nil {
+		log.Println(err)
+	}
+
+	d.Uid = u.Id
+	log.Println(d)
+	if err := d.Add(); err != nil {
+		setError(w, r, err.Error())
+	}
+
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func editdel(w http.ResponseWriter, r *http.Request, u *User) {
+	if err := r.ParseForm(); err != nil {
+		log.Println(err)
+	}
+	d := new(Data)
+
+	if err := decoder.Decode(d, r.PostForm); err != nil {
+		log.Println(err)
+	}
+
+	// within the store, we edit/delete on both id/uid
+	// so this should be ok even if user change d.Id
+	d.Uid = u.Id
+	log.Println(d)
+
+	switch r.FormValue("action") {
+	case "edit":
+		if err := d.Edit(); err != nil {
+			setError(w, r, err.Error())
+		}
+	case "delete":
+		if err := d.Delete(); err != nil {
+			setError(w, r, err.Error())
+		}
+	}
+
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 // page for which user must already be authenticated
 var mustauth = map[string]bool{
 	"settings": true,
+	"add":      true,
+	"editdel":  true,
 }
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.HandlerFunc {
@@ -274,6 +325,8 @@ func main() {
 	http.HandleFunc("/settings", makeHandler(settings))
 	http.HandleFunc("/login", makeHandler(login))
 	http.HandleFunc("/logout", logout)
+	http.HandleFunc("/add", makeHandler(add))
+	http.HandleFunc("/editdel", makeHandler(editdel))
 
 	http.Handle("/static/",
 		http.StripPrefix("/static/",

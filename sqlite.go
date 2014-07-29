@@ -38,7 +38,7 @@ func (db *SQLite) Execute2(s string, v ...interface{}) (stmt *sqlite3.Statement,
 }
 
 func (db *SQLite) CreateTables() {
-	db.Execute2(`CREATE TABLE IF NOT EXISTS users (
+	db.Execute2(`CREATE TABLE IF NOT EXISTS user (
 		id			integer		PRIMARY KEY AUTOINCREMENT,
 		nick		text		UNIQUE NOT NULL,
 		passwd		text		NOT NULL,
@@ -47,6 +47,14 @@ func (db *SQLite) CreateTables() {
 		website		text		,
 		fullname	text)
 	`)
+
+	db.Execute2(`CREATE TABLE IF NOT EXISTS data (
+		id			integer		PRIMARY KEY AUTOINCREMENT,
+		uid			integer		NOT NULL,
+		name		text		NOT NULL,
+		content		text		NOT NULL,
+		FOREIGN KEY(uid) REFERENCES user(id) ON DELETE CASCADE)
+	`)
 }
 
 // return the user. login may either be the login of the user
@@ -54,7 +62,7 @@ func (db *SQLite) CreateTables() {
 func (db *SQLite) GetUser(nick, passwd string) (User, error) {
 	stmt, err := db.Execute2(`
 		SELECT id, nick, passwd, email, type, website, fullname
-		FROM users
+		FROM user
 		WHERE	(nick = (?) OR email = (?))
 		AND		passwd = (?)`, nick, nick, passwd)
 
@@ -77,7 +85,7 @@ func (db *SQLite) GetUser(nick, passwd string) (User, error) {
 
 func (db *SQLite) AddUser(u *User) error {
 	_, err := db.Execute2(`
-		INSERT INTO users(nick, passwd, email, type, website, fullname)
+		INSERT INTO user(nick, passwd, email, type, website, fullname)
 		VALUES (?, ?, ?, ?, ?, ?)`,
 		u.Nick, u.Passwd, u.Email, u.Type, u.Website, u.Fullname)
 
@@ -93,7 +101,7 @@ func (db *SQLite) AddUser(u *User) error {
 
 func (db *SQLite) UpdateUser(u *User) error {
 	_, err := db.Execute2(`
-		UPDATE users
+		UPDATE user
 		SET
 			passwd = (?),
 			email = (?),
@@ -110,5 +118,64 @@ func (db *SQLite) UpdateUser(u *User) error {
 }
 
 func (db *SQLite) RemUser(u *User) error {
+	return errors.New("Not implemented")
+}
+
+// Get every data owned by user
+func (db *SQLite) GetData(u *User) []Data {
+	data := make([]Data, 0)
+
+	stmt, err := db.Prepare(`
+		SELECT id, uid, name, content
+		FROM data
+		WHERE uid = (?)`, u.Id)
+
+	if err != nil {
+		log.Println(err)
+		return data
+	}
+
+	stmt.All(func(s *sqlite3.Statement, v ...interface{}) {
+		d := Data{v[0].(int64), v[1].(int64), v[2].(string), v[3].(string)}
+		data = append(data, d)
+	})
+
+	return data
+}
+
+func (db *SQLite) AddData(d *Data) error {
+	_, err := db.Execute2(`
+		INSERT INTO data(uid, name, content)
+		VALUES(?, ?, ?)`,
+		d.Uid, d.Name, d.Content)
+
+	if err != nil && err != sqlite3.ROW {
+		return errors.New("A spark, somewhere deep in the machine.")
+	}
+
+	// XXX safe? (maybe lock/unlock)
+	d.Id = db.LastInsertRowID()
+
+	return nil
+}
+
+func (db *SQLite) UpdateData(d *Data) error {
+	_, err := db.Execute2(`
+		UPDATE data
+		SET
+			name = (?),
+			content = (?)
+		WHERE id = (?)
+		AND uid = (?)`,
+		d.Name, d.Content, d.Id, d.Uid)
+
+	if err != nil && err != sqlite3.ROW {
+		return errors.New("Who let that ant get there?")
+	}
+
+	return nil
+}
+
+func (db *SQLite) RemData(d *Data) error {
 	return errors.New("Not implemented")
 }

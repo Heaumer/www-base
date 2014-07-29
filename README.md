@@ -24,5 +24,8 @@ received from user, and store or retrieve it.
 
 * account deletion
 * Use flash messages for errors, and clean the gorilla/sessions uses.
+* Allow displaying of info messages along with errors (eg. "settings updated")
 * Remove jquery/bootstrap and use CDN instead.
-* Generic Data with permissions
+* Finish data (delete)
+* Data permissions, ensure correct access
+* Clean CSS/HTML
