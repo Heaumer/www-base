@@ -11,17 +11,17 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"time"
 	"sync"
+	"time"
 )
 
 var (
 	decoder = schema.NewDecoder()
-	sstore = sessions.NewCookieStore([]byte(securecookie.GenerateRandomKey(32)))
+	sstore  = sessions.NewCookieStore([]byte(securecookie.GenerateRandomKey(32)))
 
 	registerb, _ = ioutil.ReadFile("templates/register.html")
-	loginb, _ = ioutil.ReadFile("templates/login.html")
-	footerb, _ = ioutil.ReadFile("templates/footer.html")
+	loginb, _    = ioutil.ReadFile("templates/login.html")
+	footerb, _   = ioutil.ReadFile("templates/footer.html")
 
 	headert = template.Must(
 		template.New("header.html").ParseFiles("templates/header.html"))
@@ -41,7 +41,7 @@ var tokens struct {
 func writeTemplate(w http.ResponseWriter, t *template.Template, d interface{}) {
 	if err := t.Execute(w, &d); err != nil {
 		log.Println(err)
-		w.Write([]byte("Internal error on template "+t.Name()))
+		w.Write([]byte("Internal error on template " + t.Name()))
 	}
 }
 
@@ -108,17 +108,17 @@ func setError(w http.ResponseWriter, r *http.Request, err string) {
 func index(w http.ResponseWriter, r *http.Request, u *User) {
 	if u == nil {
 		d := struct {
-			Connected	bool
-			User		*User
-		} { false, &User{} }
+			Connected bool
+			User      *User
+		}{false, &User{}}
 		writeTemplate(w, indext, &d)
 	} else {
 		d := struct {
-			Connected	bool
-			User		*User
-			HasWebsite	bool
-			HasFullname	bool
-		}{ true, u, u.Website != "", u.Fullname != "" }
+			Connected   bool
+			User        *User
+			HasWebsite  bool
+			HasFullname bool
+		}{true, u, u.Website != "", u.Fullname != ""}
 		writeTemplate(w, indext, &d)
 	}
 }
@@ -214,13 +214,13 @@ func login(w http.ResponseWriter, r *http.Request, u *User) {
 func logout(w http.ResponseWriter, r *http.Request) {
 	token := getToken(r)
 	unsetToken(r, token)
-	getError(w, r)	// pop error if any
+	getError(w, r) // pop error if any
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // page for which user must already be authenticated
-var mustauth = map[string]bool {
-	"settings" : true,
+var mustauth = map[string]bool{
+	"settings": true,
 }
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.HandlerFunc {

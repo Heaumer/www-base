@@ -1,7 +1,7 @@
 package main
 
 import (
-//	"database/sql"
+	//	"database/sql"
 	"errors"
 	"github.com/kuroneko/gosqlite3"
 	"log"
@@ -65,13 +65,13 @@ func (db *SQLite) GetUser(nick, passwd string) (User, error) {
 	}
 
 	return User{
-		v[0].(int64),	// id
-		v[1].(string),	// nick
-		v[2].(string),	// passwd
-		v[3].(string),	// email
-		v[4].(int64),		// type
-		v[5].(string),	// website
-		v[6].(string),	// fullname
+		v[0].(int64),  // id
+		v[1].(string), // nick
+		v[2].(string), // passwd
+		v[3].(string), // email
+		v[4].(int64),  // type
+		v[5].(string), // website
+		v[6].(string), // fullname
 	}, nil
 }
 

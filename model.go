@@ -1,11 +1,11 @@
 package main
 
 import (
-//	"log"
-	"errors"
-	"strings"
+	//	"log"
 	"crypto/sha512"
 	"encoding/base64"
+	"errors"
+	"strings"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 
 type User struct {
 	Id     int64
-	Nick  string
+	Nick   string
 	Passwd string
 	Email  string
 	Type   int64
