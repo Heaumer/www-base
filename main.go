@@ -61,7 +61,7 @@ start:
 
 // set a new one-time-token for given user
 func setToken(w http.ResponseWriter, r *http.Request, user *User) {
-	session, _ := sstore.Get(r, "www-base-token")
+	session, _ := sstore.Get(r, "www-base")
 
 	token := mkToken()
 	session.Values["token"] = token
@@ -71,7 +71,7 @@ func setToken(w http.ResponseWriter, r *http.Request, user *User) {
 
 // get user one-time-token
 func getToken(r *http.Request) int64 {
-	session, _ := sstore.Get(r, "www-base-token")
+	session, _ := sstore.Get(r, "www-base")
 
 	if token, exists := session.Values["token"]; exists {
 		return token.(int64)
@@ -81,27 +81,24 @@ func getToken(r *http.Request) int64 {
 
 // unset user token
 func unsetToken(r *http.Request, token int64) {
-	session, _ := sstore.Get(r, "www-base-token")
+	session, _ := sstore.Get(r, "www-base")
 	delete(session.Values, "token")
 	delete(tokens.v, token)
 }
 
-// pop error
-func getError(w http.ResponseWriter, r *http.Request) string {
-	session, _ := sstore.Get(r, "www-base-err")
-	if err, exists := session.Values["error"]; exists {
-		// XXX cf. flash messages in gorilla/sessions
-		delete(session.Values, "error")
+func getFlash(w http.ResponseWriter, r *http.Request, name string) string {
+	session, _ := sstore.Get(r, "www-base")
+	if flashes := session.Flashes(name); len(flashes) > 0 {
 		session.Save(r, w)
-		return err.(string)
+		return flashes[0].(string)
 	}
+
 	return ""
 }
 
-// set a new error
-func setError(w http.ResponseWriter, r *http.Request, err string) {
-	session, _ := sstore.Get(r, "www-base-err")
-	session.Values["error"] = err
+func setFlash(w http.ResponseWriter, r *http.Request, name, value string) {
+	session, _ := sstore.Get(r, "www-base")
+	session.AddFlash(value, name)
 	session.Save(r, w)
 }
 
@@ -144,7 +141,7 @@ func register(w http.ResponseWriter, r *http.Request, u *User) {
 		}
 		if err := u.Register(); err != nil {
 			log.Println(err)
-			setError(w, r, err.Error())
+			setFlash(w, r, "error", err.Error())
 			http.Redirect(w, r, "/register", http.StatusFound)
 		} else {
 			setToken(w, r, u)
@@ -174,7 +171,7 @@ func settings(w http.ResponseWriter, r *http.Request, u *User) {
 		u.Id = id
 		if err := u.Update(passwd); err != nil {
 			log.Println(err)
-			setError(w, r, err.Error())
+			setFlash(w, r, "error", err.Error())
 			http.Redirect(w, r, "/settings", http.StatusFound)
 		} else {
 			setToken(w, r, u)
@@ -203,7 +200,7 @@ func login(w http.ResponseWriter, r *http.Request, u *User) {
 		}
 		if err := u.Login(); err != nil {
 			log.Println("login failed")
-			setError(w, r, err.Error())
+			setFlash(w, r, "error", err.Error())
 			http.Redirect(w, r, "/login", http.StatusFound)
 		} else {
 			setToken(w, r, u)
@@ -215,7 +212,7 @@ func login(w http.ResponseWriter, r *http.Request, u *User) {
 func logout(w http.ResponseWriter, r *http.Request) {
 	token := getToken(r)
 	unsetToken(r, token)
-	getError(w, r) // pop error if any
+	getFlash(w, r, "error") // pop error if any
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -237,7 +234,7 @@ func add(w http.ResponseWriter, r *http.Request, u *User) {
 	d.Uid = u.Id
 	log.Println(d)
 	if err := d.Add(); err != nil {
-		setError(w, r, err.Error())
+		setFlash(w, r, "error", err.Error())
 	}
 
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -261,11 +258,11 @@ func editdel(w http.ResponseWriter, r *http.Request, u *User) {
 	switch r.FormValue("action") {
 	case "edit":
 		if err := d.Edit(); err != nil {
-			setError(w, r, err.Error())
+			setFlash(w, r, "error", err.Error())
 		}
 	case "delete":
 		if err := d.Delete(); err != nil {
-			setError(w, r, err.Error())
+			setFlash(w, r, "error", err.Error())
 		}
 	}
 
@@ -289,12 +286,12 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.Handle
 			unsetToken(r, token)
 			setToken(w, r, u)
 		} else if mustauth[r.URL.Path[1:]] {
-			setError(w, r, "Not yet connected")
+			setFlash(w, r, "error", "Not yet connected")
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 
-		err := getError(w, r)
+		err := getFlash(w, r, "error")
 
 		if r.Method == "GET" {
 			d := struct {

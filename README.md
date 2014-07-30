@@ -1,12 +1,15 @@
-This is a sample Go web application, allowing to register/login/logout
-users. It tries to be as idiomatic as possible.
+This is a sample Go web application, allowing to
+/login/logout/unregister users. Users may then add/edit/delete
+named data. It tries to be as idiomatic and predictable as possible.
+
+Both JQuery and Bootstrap are used for the UI.
 
 # Files
 ## main.go
 Contains all the HTTP handling. Built on top of net/http and
 the gorilla toolkit, mainly:
 
-* gorilla/schema to convert form to struct (User)
+* gorilla/schema to convert form to struct (User, Data)
 * gorilla/session to store data through cookies (token)
 
 ## store.go, sqlite.go 
@@ -22,9 +25,8 @@ received from user, and store or retrieve it.
 
 # TODO
 
-* Use flash messages for errors, and clean the gorilla/sessions uses.
 * Allow displaying of info messages along with errors (eg. "settings updated")
 * Remove jquery/bootstrap and use CDN instead.
 * Data permissions, ensure correct access
-* Clean CSS/HTML, warning message, etc. (bell & whistles)
-* schema: invalid path "action" on templates/index.html 
+* Clean CSS/HTML, warning message, password changing, etc. (bell & whistles)
+* schema: invalid path "action" on templates/index.html (inoffensive but still)
