@@ -1,5 +1,5 @@
 /* display message at top of page */
-#info {
+#info, #error {
 	width			:	30%;
 	margin-left		:	auto;
 	margin-right	:	auto;

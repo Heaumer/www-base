@@ -25,9 +25,16 @@
 			{{ end }}
 		</nav>
 		{{ if .HasError }}
-			<div id="info" class="alert alert-dismissable alert-danger">
+			<div id="error" class="alert alert-dismissable alert-danger">
 				<button type="button" class="close"
 					data-dismiss="alert" aria-hidden="true">&times;</button>
 				{{ .Error }}
+			</div>
+		{{ end }}
+		{{ if .HasInfo }}
+			<div id="info" class="alert alert-dismissable alert-info">
+				<button type="button" class="close"
+					data-dismiss="alert" aria-hidden="true">&times;</button>
+				{{ .Info }}
 			</div>
 		{{ end }}

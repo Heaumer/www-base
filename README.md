@@ -25,7 +25,6 @@ received from user, and store or retrieve it.
 
 # TODO
 
-* Allow displaying of info messages along with errors (eg. "settings updated")
 * Remove jquery/bootstrap and use CDN instead.
 * Data permissions, ensure correct access
 * Clean CSS/HTML, warning message, password changing, etc. (bell & whistles)

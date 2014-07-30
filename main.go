@@ -86,6 +86,7 @@ func unsetToken(r *http.Request, token int64) {
 	delete(tokens.v, token)
 }
 
+// get a named flash message. Returns an empty string if none.
 func getFlash(w http.ResponseWriter, r *http.Request, name string) string {
 	session, _ := sstore.Get(r, "www-base")
 	if flashes := session.Flashes(name); len(flashes) > 0 {
@@ -96,6 +97,7 @@ func getFlash(w http.ResponseWriter, r *http.Request, name string) string {
 	return ""
 }
 
+// set a named flash message
 func setFlash(w http.ResponseWriter, r *http.Request, name, value string) {
 	session, _ := sstore.Get(r, "www-base")
 	session.AddFlash(value, name)
@@ -175,6 +177,7 @@ func settings(w http.ResponseWriter, r *http.Request, u *User) {
 			http.Redirect(w, r, "/settings", http.StatusFound)
 		} else {
 			setToken(w, r, u)
+			setFlash(w, r, "info", "settings updated")
 			http.Redirect(w, r, "/", http.StatusFound)
 		}
 	}
@@ -218,6 +221,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 
 func unregister(w http.ResponseWriter, r *http.Request, u *User) {
 	u.Delete()
+	setFlash(w, r, "info", "account deleted")
 	logout(w, r)
 }
 
@@ -237,6 +241,7 @@ func add(w http.ResponseWriter, r *http.Request, u *User) {
 		setFlash(w, r, "error", err.Error())
 	}
 
+	setFlash(w, r, "info", "new element added")
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -259,10 +264,14 @@ func editdel(w http.ResponseWriter, r *http.Request, u *User) {
 	case "edit":
 		if err := d.Edit(); err != nil {
 			setFlash(w, r, "error", err.Error())
+		} else {
+			setFlash(w, r, "info", "element edited")
 		}
 	case "delete":
 		if err := d.Delete(); err != nil {
 			setFlash(w, r, "error", err.Error())
+		} else {
+			setFlash(w, r, "info", "element deleted")
 		}
 	}
 
@@ -291,7 +300,8 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.Handle
 			return
 		}
 
-		err := getFlash(w, r, "error")
+		err  := getFlash(w, r, "error")
+		info := getFlash(w, r, "info")
 
 		if r.Method == "GET" {
 			d := struct {
@@ -299,11 +309,15 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.Handle
 				Title     string
 				HasError  bool
 				Error     string
+				HasInfo   bool
+				Info      string
 			}{
 				Connected: u != nil,
 				Title:     "Sample website",
 				HasError:  err != "",
 				Error:     err,
+				HasInfo:   info != "",
+				Info:      info,
 			}
 			writeTemplate(w, headert, &d)
 		}
