@@ -1,5 +1,8 @@
 <div class="container">
+	{{ $uid := .User.Id }}
 	{{ if .Connected }}
+		<!-- User information -->
+
 		<p>
 			Hello,
 			{{ if .HasFullname }}
@@ -14,9 +17,10 @@
 			</p>
 		{{ end }}
 
+		<!-- Adding field -->
 		<p>
 			Here is the data you previously saved. The first
-			field is for you to add a new one.
+			field is for you to add new data
 		</p>
 		<div class="container">
 			<form id="add" action="/add" method="post">
@@ -26,10 +30,12 @@
 							<span class="name">
 								<input name="Name" type="text" value="new data" />
 							</span>
+							<span class="checkbox-inline">
+								<input type="checkbox" name="Public">Public
+							</span>
 						</span>
 					</div>
-					<div name="content" class="panel-body" contenteditable="true">
-					</div>
+					<div name="content" class="panel-body" contenteditable="true">.</div>
 					<!-- filled with name:content via js upon submit -->
 					<input name="Content" type="hidden" value="" />
 					<hr />
@@ -43,25 +49,41 @@
 				</div>
 			</form>
 		</div>
-		{{ range .Data }}
-		<div class="container">
-			<form id="editdel" action="/editdel" method="post">
-				<div class="panel panel-default text-left">
-					<div class="panel-heading">
-						<span class="panel-title"> Name:
-							<span class="name">
+	{{ end }}
+
+	<!-- Display data available -->
+	{{ range .Data }}
+	<div class="container">
+		<form id="editdel" action="/editdel" method="post">
+			<div class="panel panel-default text-left">
+				<div class="panel-heading">
+					<span class="panel-title"> Name:
+						<span class="name">
+							{{ if eq $uid .Uid }}
 								<input name="Name" type="text" value="{{ .Name }}" />
-							</span>
+							{{ else }}
+								{{ .Name }}
+							{{ end }}
 						</span>
-					</div>
-					<div name="content" class="panel-body" contenteditable="true">
-						{{ .Content }}
-					</div>
-					<!-- filled with name:content via js upon submit -->
-					<input name="Content" type="hidden" value="" />
-					<div class="text-center">
-						<input type="hidden" name="Id" value="{{ .Id }}" />
-						<hr />
+						{{ if eq $uid .Uid }}
+						<span class="checkbox-inline">
+							<input type="checkbox" name="Public"
+							{{ if .Public }}checked{{ end }}> Public
+						</span>
+						{{ end }}
+					</span>
+				</div>
+				<div name="content" class="panel-body"
+					{{ if eq $uid .Uid }} contenteditable="true" {{ end }}>
+					{{ .Content }}
+				</div>
+				<!-- filled with name:content via js upon submit -->
+				<input name="Content" type="hidden" value="" />
+				<div class="text-center">
+					<input type="hidden" name="Id" value="{{ .Id }}" />
+					<input type="hidden" name="Uid" value="{{ .Uid }}" />
+					<hr />
+					{{ if eq $uid .Uid }}
 						<div class="btn-group">
 							<button name="action" value="edit" style="width:50%;"
 								type="submit" class="btn btn-success">
@@ -72,17 +94,17 @@
 									Delete
 							</button>
 						</div>
-					</div>
+					{{ end }}
 				</div>
-			</form>
-		</div>
-		{{ end }}
-		</tbody>
-	{{ else }}
+			</div>
+		</form>
+	</div>
+	{{ end }}
+
+	{{ if not .Connected }}
 		<p>
-			Please, <a href="/register">register</a> or
-			<a href="/login">login</a>!
+			You may, <a href="/register">register</a> or
+			<a href="/login">login</a> for more!
 		</p>
 	{{ end }}
-</p>
 </div>

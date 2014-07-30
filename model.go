@@ -31,6 +31,7 @@ type Data struct {
 	Uid     int64	// owner
 	Name    string
 	Content string
+	Public  bool
 }
 
 func (u *User) Validate() error {
@@ -64,7 +65,7 @@ func (u *User) Register() error {
 	return store.AddUser(u)
 }
 
-func (u *User) Update(oldpasswd string) error {
+func (u *User) UpdateSettings(oldpasswd string) error {
 	if err := u.Validate(); err != nil {
 		return err
 	}
@@ -81,7 +82,7 @@ func (u *User) Login() (err error) {
 	return
 }
 
-func (u *User) Delete() (err error) {
+func (u *User) Unregister() (err error) {
 	return store.RemUser(u)
 }
 
@@ -99,7 +100,7 @@ func (u *User) String() string {
 }
 
 func (u *User) GetData() []Data {
-	return store.GetData(u)
+	return store.GetData(u.Id)
 }
 
 func (d *Data) Validate() error {
@@ -114,7 +115,8 @@ func (d *Data) Validate() error {
 	return nil
 }
 
-func (d *Data) Add() error {
+func (u *User) Add(d *Data) error {
+	d.Uid = u.Id
 	if err := d.Validate(); err != nil {
 		return err
 	}
@@ -122,12 +124,17 @@ func (d *Data) Add() error {
 	return store.AddData(d)
 }
 
-func (d *Data) Delete() error {
+func (u *User) Delete(d *Data) error {
+	if u.Id != d.Uid {
+		return errors.New("Not owner of this!")
+	}
 	return store.RemData(d)
-	return errors.New("Not implemented")
 }
 
-func (d *Data) Edit() error {
+func (u *User) Edit(d *Data) error {
+	if u.Id != d.Uid {
+		return errors.New("Not owner of this!")
+	}
 	if err := d.Validate(); err != nil {
 		return err
 	}

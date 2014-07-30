@@ -106,21 +106,18 @@ func setFlash(w http.ResponseWriter, r *http.Request, name, value string) {
 
 func index(w http.ResponseWriter, r *http.Request, u *User) {
 	if u == nil {
-		d := struct {
-			Connected bool
-			User      *User
-		}{false, &User{}}
-		writeTemplate(w, indext, &d)
-	} else {
-		d := struct {
-			Connected   bool
-			User        *User
-			HasWebsite  bool
-			HasFullname bool
-			Data        []Data
-		}{true, u, u.Website != "", u.Fullname != "", u.GetData()}
-		writeTemplate(w, indext, &d)
+		u = &User{}
 	}
+
+	d := struct {
+		Connected   bool
+		User        *User
+		HasWebsite  bool
+		HasFullname bool
+		Data        []Data
+	}{u.Id != 0, u, u.Website != "", u.Fullname != "", u.GetData()}
+
+	writeTemplate(w, indext, &d)
 }
 
 func register(w http.ResponseWriter, r *http.Request, u *User) {
@@ -171,7 +168,7 @@ func settings(w http.ResponseWriter, r *http.Request, u *User) {
 			log.Println(err)
 		}
 		u.Id = id
-		if err := u.Update(passwd); err != nil {
+		if err := u.UpdateSettings(passwd); err != nil {
 			log.Println(err)
 			setFlash(w, r, "error", err.Error())
 			http.Redirect(w, r, "/settings", http.StatusFound)
@@ -220,7 +217,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func unregister(w http.ResponseWriter, r *http.Request, u *User) {
-	u.Delete()
+	u.Unregister()
 	setFlash(w, r, "info", "account deleted")
 	logout(w, r)
 }
@@ -235,13 +232,12 @@ func add(w http.ResponseWriter, r *http.Request, u *User) {
 		log.Println(err)
 	}
 
-	d.Uid = u.Id
-	log.Println(d)
-	if err := d.Add(); err != nil {
+	if err := u.Add(d); err != nil {
 		setFlash(w, r, "error", err.Error())
+	} else {
+		setFlash(w, r, "info", "new element added")
 	}
 
-	setFlash(w, r, "info", "new element added")
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -255,20 +251,15 @@ func editdel(w http.ResponseWriter, r *http.Request, u *User) {
 		log.Println(err)
 	}
 
-	// within the store, we edit/delete on both id/uid
-	// so this should be ok even if user change d.Id
-	d.Uid = u.Id
-	log.Println(d)
-
 	switch r.FormValue("action") {
 	case "edit":
-		if err := d.Edit(); err != nil {
+		if err := u.Edit(d); err != nil {
 			setFlash(w, r, "error", err.Error())
 		} else {
 			setFlash(w, r, "info", "element edited")
 		}
 	case "delete":
-		if err := d.Delete(); err != nil {
+		if err := u.Delete(d); err != nil {
 			setFlash(w, r, "error", err.Error())
 		} else {
 			setFlash(w, r, "info", "element deleted")

@@ -57,6 +57,7 @@ func (db *SQLite) CreateTables() {
 		uid			integer		NOT NULL,
 		name		text		NOT NULL,
 		content		text		NOT NULL,
+		public		integer		NOT NULL,
 		FOREIGN KEY(uid) REFERENCES user(id) ON DELETE CASCADE)
 	`)
 }
@@ -134,13 +135,22 @@ func (db *SQLite) RemUser(u *User) error {
 }
 
 // Get every data owned by user
-func (db *SQLite) GetData(u *User) []Data {
+func (db *SQLite) GetData(uid int64) []Data {
 	data := make([]Data, 0)
+	var err error
+	var stmt *sqlite3.Statement
 
-	stmt, err := db.Prepare(`
-		SELECT id, uid, name, content
-		FROM data
-		WHERE uid = (?)`, u.Id)
+	// connected?
+	if uid != 0 {
+		stmt, err = db.Prepare(`SELECT id, uid, name, content, public
+			FROM data
+			WHERE public = 1
+			OR uid = (?)`, uid)
+	} else {
+		stmt, err = db.Prepare(`SELECT id, uid, name, content, public
+			FROM data
+			WHERE public = 1`)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -148,7 +158,13 @@ func (db *SQLite) GetData(u *User) []Data {
 	}
 
 	stmt.All(func(s *sqlite3.Statement, v ...interface{}) {
-		d := Data{v[0].(int64), v[1].(int64), v[2].(string), v[3].(string)}
+		d := Data{
+			v[0].(int64),
+			v[1].(int64),
+			v[2].(string),
+			v[3].(string),
+			v[4].(int64) == 1,
+		}
 		data = append(data, d)
 	})
 
@@ -156,10 +172,13 @@ func (db *SQLite) GetData(u *User) []Data {
 }
 
 func (db *SQLite) AddData(d *Data) error {
+	public := 0
+	if d.Public { public = 1 }
+
 	_, err := db.Execute2(`
-		INSERT INTO data(uid, name, content)
-		VALUES(?, ?, ?)`,
-		d.Uid, d.Name, d.Content)
+		INSERT INTO data(uid, name, content, public)
+		VALUES(?, ?, ?, ?)`,
+		d.Uid, d.Name, d.Content, public)
 
 	if iserr(err) {
 		return errors.New("A spark, somewhere deep in the machine.")
@@ -172,14 +191,18 @@ func (db *SQLite) AddData(d *Data) error {
 }
 
 func (db *SQLite) UpdateData(d *Data) error {
+	public := 0
+	if d.Public { public = 1 }
+
 	_, err := db.Execute2(`
 		UPDATE data
 		SET
 			name = (?),
 			content = (?)
+			public = (?)
 		WHERE id = (?)
 		AND uid = (?)`,
-		d.Name, d.Content, d.Id, d.Uid)
+		d.Name, d.Content, public, d.Id, d.Uid)
 
 	if iserr(err) {
 		return errors.New("Who let that ant get there?")
