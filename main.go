@@ -219,6 +219,11 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func unregister(w http.ResponseWriter, r *http.Request, u *User) {
+	u.Delete()
+	logout(w, r)
+}
+
 func add(w http.ResponseWriter, r *http.Request, u *User) {
 	if err := r.ParseForm(); err != nil {
 		log.Println(err)
@@ -269,9 +274,10 @@ func editdel(w http.ResponseWriter, r *http.Request, u *User) {
 
 // page for which user must already be authenticated
 var mustauth = map[string]bool{
-	"settings": true,
-	"add":      true,
-	"editdel":  true,
+	"settings":   true,
+	"unregister": true,
+	"add":        true,
+	"editdel":    true,
 }
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.HandlerFunc {
@@ -325,6 +331,7 @@ func main() {
 	http.HandleFunc("/settings", makeHandler(settings))
 	http.HandleFunc("/login", makeHandler(login))
 	http.HandleFunc("/logout", logout)
+	http.HandleFunc("/unregister", makeHandler(unregister))
 	http.HandleFunc("/add", makeHandler(add))
 	http.HandleFunc("/editdel", makeHandler(editdel))
 

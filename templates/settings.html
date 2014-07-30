@@ -1,5 +1,7 @@
 <div class="container text-center">
-
+	<p>
+		Leave the password field blank to keep it
+	</p>
 	<form action="/settings" method="post">
 		<div class="input-group">
 			<span class="input-group-addon">Password</span>
@@ -21,5 +23,12 @@
 				value="{{ .Fullname }}" />
 		</div>
 		<input class="btn btn-success btn-lg" type="submit" value="Update" />
+	</form>
+	<p>
+		Click the following to delete your account and logout.
+	</p>
+	<form action="/unregister" method="post">
+		<input class="btn btn-danger btn-lg" type="submit"
+			value="Delete account" />
 	</form>
 </div>

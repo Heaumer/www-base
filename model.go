@@ -81,6 +81,10 @@ func (u *User) Login() (err error) {
 	return
 }
 
+func (u *User) Delete() (err error) {
+	return store.RemUser(u)
+}
+
 func (u *User) String() string {
 	web, fn := "", ""
 

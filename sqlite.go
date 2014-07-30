@@ -24,13 +24,17 @@ func NewSQLite(fn string) (db *SQLite) {
 	return
 }
 
+func iserr(err error) bool {
+	return err != nil && err != sqlite3.ROW
+}
+
 func (db *SQLite) Execute2(s string, v ...interface{}) (stmt *sqlite3.Statement, err error) {
 
 	stmt, err = db.Prepare(s, v...)
 	if err == nil {
 		err = stmt.Step()
 	}
-	if err != nil && err != sqlite3.ROW {
+	if iserr(err) {
 		_, file, line, _ := runtime.Caller(1)
 		log.Printf("Error with SQLite: %s, at %s:%d\n", err, file, line)
 	}
@@ -68,7 +72,7 @@ func (db *SQLite) GetUser(nick, passwd string) (User, error) {
 
 	v := stmt.Row()
 
-	if v == nil || v[0] == nil || err != nil && err != sqlite3.ROW {
+	if v == nil || v[0] == nil || iserr(err) {
 		return User{}, errors.New("Wrong nick/email or password")
 	}
 
@@ -89,7 +93,7 @@ func (db *SQLite) AddUser(u *User) error {
 		VALUES (?, ?, ?, ?, ?, ?)`,
 		u.Nick, u.Passwd, u.Email, u.Type, u.Website, u.Fullname)
 
-	if err != nil && err != sqlite3.ROW {
+	if iserr(err) {
 		return errors.New("Nickname or email already taken")
 	}
 
@@ -110,7 +114,7 @@ func (db *SQLite) UpdateUser(u *User) error {
 		WHERE id = (?)`,
 		u.Passwd, u.Email, u.Website, u.Fullname, u.Id)
 
-	if err != nil && err != sqlite3.ROW {
+	if iserr(err) {
 		return errors.New("Email already taken")
 	}
 
@@ -118,7 +122,15 @@ func (db *SQLite) UpdateUser(u *User) error {
 }
 
 func (db *SQLite) RemUser(u *User) error {
-	return errors.New("Not implemented")
+	_, err := db.Execute2(`
+		DELETE FROM user
+		WHERE id = (?)`, u.Id)
+
+	if iserr(err) {
+		return errors.New("fortune: It's the only avant-garde we got.")
+	}
+
+	return nil
 }
 
 // Get every data owned by user
@@ -149,7 +161,7 @@ func (db *SQLite) AddData(d *Data) error {
 		VALUES(?, ?, ?)`,
 		d.Uid, d.Name, d.Content)
 
-	if err != nil && err != sqlite3.ROW {
+	if iserr(err) {
 		return errors.New("A spark, somewhere deep in the machine.")
 	}
 
@@ -169,7 +181,7 @@ func (db *SQLite) UpdateData(d *Data) error {
 		AND uid = (?)`,
 		d.Name, d.Content, d.Id, d.Uid)
 
-	if err != nil && err != sqlite3.ROW {
+	if iserr(err) {
 		return errors.New("Who let that ant get there?")
 	}
 
@@ -182,7 +194,7 @@ func (db *SQLite) RemData(d *Data) error {
 		WHERE id = (?)
 		AND uid = (?)`, d.Id, d.Uid)
 
-	if err != nil && err != sqlite3.ROW {
+	if iserr(err) {
 		return errors.New("A mischevious being made a move.")
 	}
 
