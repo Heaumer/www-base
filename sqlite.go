@@ -177,5 +177,14 @@ func (db *SQLite) UpdateData(d *Data) error {
 }
 
 func (db *SQLite) RemData(d *Data) error {
-	return errors.New("Not implemented")
+	_, err := db.Execute2(`
+		DELETE FROM data
+		WHERE id = (?)
+		AND uid = (?)`, d.Id, d.Uid)
+
+	if err != nil && err != sqlite3.ROW {
+		return errors.New("A mischevious being made a move.")
+	}
+
+	return nil
 }

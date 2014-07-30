@@ -119,6 +119,7 @@ func (d *Data) Add() error {
 }
 
 func (d *Data) Delete() error {
+	return store.RemData(d)
 	return errors.New("Not implemented")
 }
 
