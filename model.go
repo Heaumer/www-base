@@ -28,7 +28,7 @@ type User struct {
 
 type Data struct {
 	Id      int64
-	Uid     int64	// owner
+	Uid     int64 // owner
 	Name    string
 	Content string
 	Public  bool
@@ -65,16 +65,19 @@ func (u *User) Register() error {
 	return store.AddUser(u)
 }
 
-func (u *User) UpdateSettings(oldpasswd string) error {
-	if err := u.Validate(); err != nil {
+func (u *User) UpdateSettings(u2 *User, confirm string) error {
+	if err := u2.Validate(); err != nil {
 		return err
 	}
-
-	// password has changed, and is valid
-	if u.Passwd != oldpasswd {
-		u.Passwd = hashPasswd(u.Passwd)
+	if u2.Passwd != confirm {
+		return errors.New("Password not matching")
 	}
-	return store.UpdateUser(u)
+	u2.Passwd = hashPasswd(u2.Passwd)
+	if err := store.UpdateUser(u2); err != nil {
+		return err
+	}
+	*u = *u2
+	return nil
 }
 
 func (u *User) Login() (err error) {
@@ -82,7 +85,7 @@ func (u *User) Login() (err error) {
 	return
 }
 
-func (u *User) Unregister() (err error) {
+func (u *User) Unregister() error {
 	return store.RemUser(u)
 }
 
@@ -143,5 +146,5 @@ func (u *User) Edit(d *Data) error {
 }
 
 func (d *Data) String() string {
-	return d.Name +": '"+d.Content+"'"
+	return d.Name + ": '" + d.Content + "'"
 }

@@ -1,11 +1,14 @@
 <div class="container text-center">
-	<p>
-		Leave the password field blank to keep it
-	</p>
+	<p> Enter old password to keep it. </p>
+
 	<form action="/settings" method="post">
 		<div class="input-group">
-			<span class="input-group-addon">Password</span>
+			<span class="input-group-addon">New password</span>
 			<input name="Passwd" type="password" class="form-control" />
+		</div>
+		<div class="input-group">
+			<span class="input-group-addon">Confirm new password</span>
+			<input name="Confirm" type="password" class="form-control" />
 		</div>
 		<div class="input-group">
 			<span class="input-group-addon">Email</span>

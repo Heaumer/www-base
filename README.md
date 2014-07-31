@@ -38,6 +38,5 @@ received from user, and store or retrieve it.
 * set space-time attribute for Data (gmap/openstreetmap, frequency)
 * Remove jquery/bootstrap and use CDN instead.
 * Clean CSS/HTML, warning message, password changing, etc. (bell & whistles)
-* schema: invalid path "action" on templates/index.html (inoffensive but still)
 * insert admin by default, add an admin panel
-* a bit clumsy on ownership : to protect from user changing Uid field with handcrafted request, ensure ownership in sql; maybe cache the Data as user
+* a bit clumsy on ownership : to protect from user changing Uid field with handcrafted request, ensure ownership in sql; maybe caching Data can help doing it only in model.go

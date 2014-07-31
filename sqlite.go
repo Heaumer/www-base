@@ -123,13 +123,9 @@ func (db *SQLite) UpdateUser(u *User) error {
 }
 
 func (db *SQLite) RemUser(u *User) error {
-	_, err := db.Execute2(`
+	db.Execute2(`
 		DELETE FROM user
 		WHERE id = (?)`, u.Id)
-
-	if iserr(err) {
-		return errors.New("fortune: It's the only avant-garde we got.")
-	}
 
 	return nil
 }
@@ -173,16 +169,14 @@ func (db *SQLite) GetData(uid int64) []Data {
 
 func (db *SQLite) AddData(d *Data) error {
 	public := 0
-	if d.Public { public = 1 }
+	if d.Public {
+		public = 1
+	}
 
-	_, err := db.Execute2(`
+	db.Execute2(`
 		INSERT INTO data(uid, name, content, public)
 		VALUES(?, ?, ?, ?)`,
 		d.Uid, d.Name, d.Content, public)
-
-	if iserr(err) {
-		return errors.New("A spark, somewhere deep in the machine.")
-	}
 
 	// XXX safe? (maybe lock/unlock)
 	d.Id = db.LastInsertRowID()
@@ -192,20 +186,23 @@ func (db *SQLite) AddData(d *Data) error {
 
 func (db *SQLite) UpdateData(d *Data) error {
 	public := 0
-	if d.Public { public = 1 }
+	if d.Public {
+		public = 1
+	}
 
 	_, err := db.Execute2(`
 		UPDATE data
 		SET
 			name = (?),
-			content = (?)
+			content = (?),
 			public = (?)
 		WHERE id = (?)
 		AND uid = (?)`,
 		d.Name, d.Content, public, d.Id, d.Uid)
 
 	if iserr(err) {
-		return errors.New("Who let that ant get there?")
+		log.Println(d)
+		return errors.New("A mischevious being made a move.")
 	}
 
 	return nil

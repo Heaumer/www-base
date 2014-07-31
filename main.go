@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/gorilla/context"
-	"github.com/gorilla/schema"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"html/template"
@@ -11,12 +10,12 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
 
 var (
-	decoder = schema.NewDecoder()
 	sstore  = sessions.NewCookieStore([]byte(securecookie.GenerateRandomKey(32)))
 
 	registerb, _ = ioutil.ReadFile("templates/register.html")
@@ -131,13 +130,16 @@ func register(w http.ResponseWriter, r *http.Request, u *User) {
 	case "GET":
 		w.Write(registerb)
 	case "POST":
-		if err := r.ParseForm(); err != nil {
-			log.Println(err)
+		typ, _ := strconv.ParseInt(r.FormValue("Type"), 10, 64)
+		u := &User{
+			Nick:     r.FormValue("Nick"),
+			Passwd:   r.FormValue("Passwd"),
+			Email:    r.FormValue("Email"),
+			Type:     typ,
+			Website:  r.FormValue("Website"),
+			Fullname: r.FormValue("Fullname"),
 		}
-		u := new(User)
-		if err := decoder.Decode(u, r.PostForm); err != nil {
-			log.Println(err)
-		}
+
 		if err := u.Register(); err != nil {
 			log.Println(err)
 			setFlash(w, r, "error", err.Error())
@@ -154,27 +156,23 @@ func settings(w http.ResponseWriter, r *http.Request, u *User) {
 	case "GET":
 		writeTemplate(w, settingst, u)
 	case "POST":
-		if err := r.ParseForm(); err != nil {
-			log.Println(err)
+		u2 := &User{
+			Id:       u.Id,
+			Nick:     u.Nick,
+			Passwd:   r.FormValue("Passwd"),
+			Email:    r.FormValue("Email"),
+			Type:     u.Type,
+			Website:  r.FormValue("Website"),
+			Fullname: r.FormValue("fullname"),
 		}
-		// Ensure id is not set by user, as struct is automatically
-		// filled from POST fields, retrieved from user.
-		id := u.Id
-		// XXX Save old password. If the field has been left empty
-		// by user, it won't be changed; else, if the password
-		// is validated, it will be update.
-		passwd := u.Passwd
-		if err := decoder.Decode(u, r.PostForm); err != nil {
-			log.Println(err)
-		}
-		u.Id = id
-		if err := u.UpdateSettings(passwd); err != nil {
+
+		if err := u.UpdateSettings(u2, r.FormValue("Confirm")); err != nil {
 			log.Println(err)
 			setFlash(w, r, "error", err.Error())
 			http.Redirect(w, r, "/settings", http.StatusFound)
 		} else {
 			setToken(w, r, u)
-			setFlash(w, r, "info", "settings updated")
+			setFlash(w, r, "info", "Settings updated")
 			http.Redirect(w, r, "/", http.StatusFound)
 		}
 	}
@@ -191,12 +189,9 @@ func login(w http.ResponseWriter, r *http.Request, u *User) {
 	case "GET":
 		w.Write(loginb)
 	case "POST":
-		if err := r.ParseForm(); err != nil {
-			log.Println(err)
-		}
-		u := new(User)
-		if err := decoder.Decode(u, r.PostForm); err != nil {
-			log.Println(err)
+		u := &User{
+			Nick:   r.FormValue("Nick"),
+			Passwd: r.FormValue("Passwd"),
 		}
 		if err := u.Login(); err != nil {
 			log.Println("login failed")
@@ -218,37 +213,36 @@ func logout(w http.ResponseWriter, r *http.Request) {
 
 func unregister(w http.ResponseWriter, r *http.Request, u *User) {
 	u.Unregister()
-	setFlash(w, r, "info", "account deleted")
+	setFlash(w, r, "info", "Account deleted")
 	logout(w, r)
 }
 
 func add(w http.ResponseWriter, r *http.Request, u *User) {
-	if err := r.ParseForm(); err != nil {
-		log.Println(err)
-	}
-	d := new(Data)
-
-	if err := decoder.Decode(d, r.PostForm); err != nil {
-		log.Println(err)
+	d := &Data{
+		Name:    r.FormValue("Name"),
+		Content: r.FormValue("Content"),
+		Public:  r.FormValue("Public") != "",
 	}
 
 	if err := u.Add(d); err != nil {
 		setFlash(w, r, "error", err.Error())
 	} else {
-		setFlash(w, r, "info", "new element added")
+		setFlash(w, r, "info", "New element added")
 	}
 
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func editdel(w http.ResponseWriter, r *http.Request, u *User) {
-	if err := r.ParseForm(); err != nil {
-		log.Println(err)
-	}
-	d := new(Data)
+	id, _ := strconv.ParseInt(r.FormValue("Id"), 10, 64)
+	uid, _ := strconv.ParseInt(r.FormValue("Uid"), 10, 64)
 
-	if err := decoder.Decode(d, r.PostForm); err != nil {
-		log.Println(err)
+	d := &Data{
+		Id:      id,
+		Uid:     uid,
+		Name:    r.FormValue("Name"),
+		Content: r.FormValue("Content"),
+		Public:  r.FormValue("Public") != "",
 	}
 
 	switch r.FormValue("action") {
@@ -256,13 +250,13 @@ func editdel(w http.ResponseWriter, r *http.Request, u *User) {
 		if err := u.Edit(d); err != nil {
 			setFlash(w, r, "error", err.Error())
 		} else {
-			setFlash(w, r, "info", "element edited")
+			setFlash(w, r, "info", "Element edited")
 		}
 	case "delete":
 		if err := u.Delete(d); err != nil {
 			setFlash(w, r, "error", err.Error())
 		} else {
-			setFlash(w, r, "info", "element deleted")
+			setFlash(w, r, "info", "Element deleted")
 		}
 	}
 
@@ -291,7 +285,7 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.Handle
 			return
 		}
 
-		err  := getFlash(w, r, "error")
+		err := getFlash(w, r, "error")
 		info := getFlash(w, r, "info")
 
 		if r.Method == "GET" {
@@ -324,6 +318,7 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *User)) http.Handle
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
+
 	tokens.v = make(map[int64]*User)
 
 	store = NewSQLite("www-base.db")
