@@ -12,6 +12,9 @@ type Store interface {
 	AddData(*Data) error
 	UpdateData(*Data) error
 	RemData(*Data) error
+
+	// Permission
+	Owns(uid, id int64) bool
 }
 
 var store Store

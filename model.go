@@ -128,14 +128,14 @@ func (u *User) Add(d *Data) error {
 }
 
 func (u *User) Delete(d *Data) error {
-	if u.Id != d.Uid {
+	if !store.Owns(u.Id, d.Uid) {
 		return errors.New("Not owner of this!")
 	}
 	return store.RemData(d)
 }
 
 func (u *User) Edit(d *Data) error {
-	if u.Id != d.Uid {
+	if !store.Owns(u.Id, d.Uid) {
 		return errors.New("Not owner of this!")
 	}
 	if err := d.Validate(); err != nil {

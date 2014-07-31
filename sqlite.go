@@ -6,9 +6,12 @@ import (
 	"github.com/kuroneko/gosqlite3"
 	"log"
 	"runtime"
+	"sync"
 )
 
 type SQLite struct {
+	sync.Mutex	// mutex for cache
+	owner map[int64]int64
 	*sqlite3.Database
 }
 
@@ -18,8 +21,10 @@ func NewSQLite(fn string) (db *SQLite) {
 		log.Fatal(err)
 	}
 
-	db = &SQLite{tmp}
+	db = &SQLite{sync.Mutex{}, make(map[int64]int64), tmp}
+
 	db.CreateTables()
+	db.LoadOwners()
 
 	return
 }
@@ -60,6 +65,14 @@ func (db *SQLite) CreateTables() {
 		public		integer		NOT NULL,
 		FOREIGN KEY(uid) REFERENCES user(id) ON DELETE CASCADE)
 	`)
+}
+
+func (db *SQLite) LoadOwners() {
+	stmt, _ := db.Prepare("SELECT id, uid FROM data")
+
+	stmt.All(func(s *sqlite3.Statement, v ...interface{}) {
+		db.owner[v[0].(int64)] = v[1].(int64)
+	})
 }
 
 // return the user. login may either be the login of the user
@@ -181,6 +194,8 @@ func (db *SQLite) AddData(d *Data) error {
 	// XXX safe? (maybe lock/unlock)
 	d.Id = db.LastInsertRowID()
 
+	db.owner[d.Id] = d.Uid
+
 	return nil
 }
 
@@ -196,12 +211,10 @@ func (db *SQLite) UpdateData(d *Data) error {
 			name = (?),
 			content = (?),
 			public = (?)
-		WHERE id = (?)
-		AND uid = (?)`,
-		d.Name, d.Content, public, d.Id, d.Uid)
+		WHERE id = (?)`,
+		d.Name, d.Content, public, d.Id)
 
 	if iserr(err) {
-		log.Println(d)
 		return errors.New("A mischevious being made a move.")
 	}
 
@@ -211,12 +224,17 @@ func (db *SQLite) UpdateData(d *Data) error {
 func (db *SQLite) RemData(d *Data) error {
 	_, err := db.Execute2(`
 		DELETE FROM data
-		WHERE id = (?)
-		AND uid = (?)`, d.Id, d.Uid)
+		WHERE id = (?)`, d.Id)
 
 	if iserr(err) {
 		return errors.New("A mischevious being made a move.")
 	}
 
+	delete(db.owner, d.Id)
+
 	return nil
+}
+
+func (db *SQLite) Owns(uid, id int64) bool {
+	return db.owner[id] == uid
 }
