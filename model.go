@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// User type
 const (
 	Single = iota
 	Assoc
@@ -32,6 +33,9 @@ type Data struct {
 	Name    string
 	Content string
 	Public  bool
+
+	// Owner fullname & nick.
+	Owner	string
 }
 
 func (u *User) Validate() error {
@@ -128,14 +132,14 @@ func (u *User) Add(d *Data) error {
 }
 
 func (u *User) Delete(d *Data) error {
-	if !store.Owns(u.Id, d.Uid) {
+	if !store.Owns(u.Id, d.Uid) && u.Type != Admin {
 		return errors.New("Not owner of this!")
 	}
 	return store.RemData(d)
 }
 
 func (u *User) Edit(d *Data) error {
-	if !store.Owns(u.Id, d.Uid) {
+	if !store.Owns(u.Id, d.Uid) && u.Type != Admin {
 		return errors.New("Not owner of this!")
 	}
 	if err := d.Validate(); err != nil {

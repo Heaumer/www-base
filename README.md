@@ -37,5 +37,5 @@ received from user, and store or retrieve it.
 
 * set space-time attribute for Data (gmap/openstreetmap, frequency)
 * Remove jquery/bootstrap and use CDN instead.
-* Clean CSS/HTML, warning message, password changing, etc. (bell & whistles)
-* insert admin by default, add an admin panel
+* Clean CSS/HTML, warning message, password changing, owner display, etc. (bell & whistles)
+* add an admin panel

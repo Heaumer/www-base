@@ -1,5 +1,6 @@
 <div class="container">
 	{{ $uid := .User.Id }}
+	{{ $adm := .Admin }}
 	{{ if .Connected }}
 		<!-- User information -->
 		<p>
@@ -56,15 +57,16 @@
 		<form id="editdel" action="/editdel" method="post">
 			<div class="panel panel-default text-left">
 				<div class="panel-heading">
+					<span class="owner">Owner: {{ .Owner }}</span>
 					<span class="panel-title"> Name:
 						<span class="name">
-							{{ if eq $uid .Uid }}
+							{{ if or (eq $uid .Uid) $adm }}
 								<input name="Name" type="text" value="{{ .Name }}" />
 							{{ else }}
 								{{ .Name }}
 							{{ end }}
 						</span>
-						{{ if eq $uid .Uid }}
+						{{ if or (eq $uid .Uid) $adm }}
 						<span class="checkbox-inline">
 							<input type="checkbox" name="Public"
 							{{ if .Public }}checked{{ end }}> Public
@@ -73,7 +75,7 @@
 					</span>
 				</div>
 				<div name="content" class="panel-body"
-					{{ if eq $uid .Uid }} contenteditable="true" {{ end }}>
+					{{ if or (eq $uid .Uid) $adm }} contenteditable="true" {{ end }}>
 					{{ .Content }}
 				</div>
 				<!-- filled with name:content via js upon submit -->
@@ -82,7 +84,7 @@
 					<input type="hidden" name="Id" value="{{ .Id }}" />
 					<input type="hidden" name="Uid" value="{{ .Uid }}" />
 					<hr />
-					{{ if eq $uid .Uid }}
+					{{ if or (eq $uid .Uid) $adm }}
 						<div class="btn-group">
 							<button name="action" value="edit" style="width:50%;"
 								type="submit" class="btn btn-success">

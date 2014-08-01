@@ -25,6 +25,7 @@ func NewSQLite(fn string) (db *SQLite) {
 
 	db.CreateTables()
 	db.LoadOwners()
+	db.MkAdmin()
 
 	return
 }
@@ -68,11 +69,38 @@ func (db *SQLite) CreateTables() {
 }
 
 func (db *SQLite) LoadOwners() {
-	stmt, _ := db.Prepare("SELECT id, uid FROM data")
+	stmt, err := db.Prepare("SELECT id, uid FROM data")
+	if iserr(err) {
+		log.Fatal(err)
+	}
 
 	stmt.All(func(s *sqlite3.Statement, v ...interface{}) {
 		db.owner[v[0].(int64)] = v[1].(int64)
 	})
+}
+
+func (db *SQLite) MkAdmin() {
+	stmt, err := db.Execute2(`SELECT nick FROM user WHERE id = 1`)
+
+	if err == sqlite3.ROW {
+		v := stmt.Row()
+		if v[0].(string) != "admin" {
+			log.Fatal("By convention, admin id should be 1")
+		}
+	} else {
+		u := &User{
+			Nick:     "admin",
+			Passwd:   hashPasswd("admin"),
+			Email:    "admin@whatev.er",
+			Type:     Admin,
+			Website:  "https://sample.whatev.er",
+			Fullname: "Administrator",
+		}
+		err = db.AddUser(u)
+		if err != nil || u.Id != 1 {
+			log.Fatal("By convention, admin id should be 1")
+		}
+	}
 }
 
 // return the user. login may either be the login of the user
@@ -149,16 +177,29 @@ func (db *SQLite) GetData(uid int64) []Data {
 	var err error
 	var stmt *sqlite3.Statement
 
-	// connected?
-	if uid != 0 {
-		stmt, err = db.Prepare(`SELECT id, uid, name, content, public
-			FROM data
-			WHERE public = 1
-			OR uid = (?)`, uid)
+	// if admin, return everything
+	// else if connected, data owned plus public data
+	// else only public data
+	if uid == 1 {
+		stmt, err = db.Prepare(`
+			SELECT d.id, d.uid, d.name, d.content, d.public,
+				u.nick, u.fullname
+			FROM data AS d, user AS u
+			WHERE u.id = d.uid`)
+	} else if uid != 0 {
+		stmt, err = db.Prepare(`
+			SELECT d.id, d.uid, d.name, d.content, d.public,
+				u.nick, u.fullname
+			FROM data AS d, user AS u
+			WHERE u.id = d.uid
+			AND (public = 1 OR uid = (?))`, uid)
 	} else {
-		stmt, err = db.Prepare(`SELECT id, uid, name, content, public
-			FROM data
-			WHERE public = 1`)
+		stmt, err = db.Prepare(`
+			SELECT d.id, d.uid, d.name, d.content, d.public,
+				u.nick, u.fullname
+			FROM data AS d, user AS u
+			WHERE u.id = d.uid
+			AND public = 1`)
 	}
 
 	if err != nil {
@@ -167,12 +208,20 @@ func (db *SQLite) GetData(uid int64) []Data {
 	}
 
 	stmt.All(func(s *sqlite3.Statement, v ...interface{}) {
+		nick, fullname := v[5].(string), v[6].(string)
+		owner := fullname
+		if owner == "" {
+			owner = nick
+		} else {
+			owner += "("+nick+")"
+		}
 		d := Data{
 			v[0].(int64),
 			v[1].(int64),
 			v[2].(string),
 			v[3].(string),
 			v[4].(int64) == 1,
+			owner,
 		}
 		data = append(data, d)
 	})

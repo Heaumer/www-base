@@ -114,7 +114,15 @@ func index(w http.ResponseWriter, r *http.Request, u *User) {
 		HasWebsite  bool
 		HasFullname bool
 		Data        []Data
-	}{u.Id != 0, u, u.Website != "", u.Fullname != "", u.GetData()}
+		Admin		bool
+	}{
+		u.Id != 0,
+		u,
+		u.Website != "",
+		u.Fullname != "",
+		u.GetData(),
+		u.Type == Admin,
+	}
 
 	writeTemplate(w, indext, &d)
 }
